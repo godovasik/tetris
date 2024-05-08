@@ -16,15 +16,15 @@ int printStaticText() {
       if (boolBorder(i, j) || boolPreview(i, j)) drawCell(1, i, j);
   attron(COLOR_PAIR(1));
   mvprintw(0, WIDTH + 2, "Next Piece");
-  mvprintw(6, WIDTH + 2, "Score     ");
-  mvprintw(9, WIDTH + 2, "Level     ");
+  mvprintw(5, WIDTH + 2, "Score     ");
+  mvprintw(8, WIDTH + 2, "Level     ");
   attroff(COLOR_PAIR(1));
 }
 
 int printDynamicText(int score, int level) {
   attron(COLOR_PAIR(1));
-  mvprintw(7, WIDTH + 2, "%d", score);
-  mvprintw(13, WIDTH + 2, "%d", level);
+  mvprintw(6, WIDTH + 2, "%010d", score);
+  mvprintw(9, WIDTH + 2, "%d", level);
   attroff(COLOR_PAIR(1));
 }
 
@@ -34,8 +34,8 @@ void drawCell(int color, int i, int j) {
   attroff(COLOR_PAIR(color));
 }
 
-int drawField(int field[HEIGHT][WIDTH], int score, int level,
-              int nextFigureID) {
+int drawField(int field[HEIGHT][WIDTH], int score, int level, int nextFigureID,
+              int figList[7][2][4]) {
   for (int i = 0; i <= HEIGHT; i++) {
     for (int j = 0; j <= WIDTH; j++) {
       drawCell(field[i][j], i + 1, j + 1);  // draws current game state
@@ -43,6 +43,9 @@ int drawField(int field[HEIGHT][WIDTH], int score, int level,
   }
   printStaticText();
   printDynamicText(score, level);
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 4; j++)
+      drawCell(figList[nextFigureID][i][j], i + 2, j + WIDTH + 5);
   refresh();
 }
 
@@ -51,6 +54,8 @@ int init() {
   start_color();  // Start color functionality
   noecho();
   curs_set(FALSE);  // Don't display a cur
+  nodelay(stdscr, TRUE);
+  keypad(stdscr, TRUE);
 
   init_pair(0, COLOR_WHITE, COLOR_BLACK);    // black
   init_pair(1, COLOR_BLACK, COLOR_WHITE);    // white

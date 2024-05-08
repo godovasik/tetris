@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "../../gui/cli/gui.h"
 
-#define FPS 60
+#define WAIT_TIME 50
 
 typedef struct Figure {
   int figID;
