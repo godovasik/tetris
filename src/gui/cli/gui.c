@@ -11,11 +11,14 @@ int boolPreview(int i, int j) {
 // int draw_preview(){};
 
 int printStaticText() {
-  attron(COLOR_PAIR(2));
+  for (int i = 0; i <= HEIGHT + 1; i++)
+    for (int j = 0; j <= WIDTH + 10; j++)
+      if (boolBorder(i, j) || boolPreview(i, j)) drawCell(1, i, j);
+  attron(COLOR_PAIR(1));
   mvprintw(0, WIDTH + 2, "Next Piece");
   mvprintw(6, WIDTH + 2, "Score     ");
   mvprintw(9, WIDTH + 2, "Level     ");
-  attroff(COLOR_PAIR(2));
+  attroff(COLOR_PAIR(1));
 }
 
 int printDynamicText(int score, int level) {
@@ -31,15 +34,16 @@ void drawCell(int color, int i, int j) {
   attroff(COLOR_PAIR(color));
 }
 
-int drawField(int field[HEIGHT][WIDTH], int score, int level) {
-  for (int i = 0; i <= HEIGHT + 1; i++) {
-    for (int j = 0; j <= WIDTH + 10; j++) {
-      if (boolBorder(i, j) || boolPreview(i, j)) drawCell(1, i, j);
-      drawCell(field[i][j], i, j);  // draws current game state
+int drawField(int field[HEIGHT][WIDTH], int score, int level,
+              int nextFigureID) {
+  for (int i = 0; i <= HEIGHT; i++) {
+    for (int j = 0; j <= WIDTH; j++) {
+      drawCell(field[i][j], i + 1, j + 1);  // draws current game state
     }
   }
   printStaticText();
   printDynamicText(score, level);
+  refresh();
 }
 
 int init() {

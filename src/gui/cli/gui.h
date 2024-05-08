@@ -1,8 +1,17 @@
+#ifndef GUI_H
+#define GUI_H
+
 #include <ncurses.h>
-#include <stdio.h>
-#include <stdlib.h>
 
-#include "../../brick_game/tetris/tetris.h"
-
-#define WIDTH 10
 #define HEIGHT 20
+#define WIDTH 10
+
+int boolBorder(int i, int j);
+int boolPreview(int i, int j);
+int printStaticText();
+int printDynamicText(int score, int level);
+void drawCell(int color, int i, int j);
+int drawField(int field[HEIGHT][WIDTH], int score, int level, int nextFigureID);
+int init();
+
+#endif  // GUI_H
