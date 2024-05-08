@@ -25,37 +25,48 @@ int printDynamicText(int score, int level) {
   attroff(COLOR_PAIR(1));
 }
 
-void drawWhiteBox(int i, int j) {
-  attron(COLOR_PAIR(2));
+void drawCell(int color, int i, int j) {
+  attron(COLOR_PAIR(color));
   mvprintw(i, j, " ");
-  attroff(COLOR_PAIR(2));
+  attroff(COLOR_PAIR(color));
 }
 
-int draw() {
+int drawField(int field[HEIGHT][WIDTH], int score, int level) {
   for (int i = 0; i <= HEIGHT + 1; i++) {
     for (int j = 0; j <= WIDTH + 10; j++) {
-      if (boolBorder(i, j) || boolPreview(i, j)) drawWhiteBox(i, j);
+      if (boolBorder(i, j) || boolPreview(i, j)) drawCell(1, i, j);
+      drawCell(field[i][j], i, j);  // draws current game state
     }
   }
   printStaticText();
+  printDynamicText(score, level);
 }
 
-int main() {
+int init() {
   initscr();      // Initialize ncurses
   start_color();  // Start color functionality
   noecho();
   curs_set(FALSE);  // Don't display a cur
 
-  init_pair(1, COLOR_WHITE, COLOR_BLACK);
-  init_pair(2, COLOR_BLACK, COLOR_WHITE);
-  bkgd(COLOR_PAIR(1));  // Set the background to color pair 1
+  init_pair(0, COLOR_WHITE, COLOR_BLACK);    // black
+  init_pair(1, COLOR_BLACK, COLOR_WHITE);    // white
+  init_pair(2, COLOR_BLACK, COLOR_RED);      // red
+  init_pair(3, COLOR_BLACK, COLOR_GREEN);    // green
+  init_pair(4, COLOR_BLACK, COLOR_BLUE);     // blue
+  init_pair(5, COLOR_BLACK, COLOR_YELLOW);   // yellow
+  init_pair(6, COLOR_BLACK, COLOR_MAGENTA);  // magenta
+  init_pair(7, COLOR_BLACK, COLOR_CYAN);     // cyan
 
-  draw();
-  printStaticText(0, 0, 0);
-  refresh();  // Refresh the screen to match what's in memory
-  startGame();
-
-  getch();   // Wait for user input
-  endwin();  // End ncurses
-  return 0;
+  bkgd(COLOR_PAIR(0));  // Set the background to color pair 1
 }
+
+// int main() {
+//   init();
+
+//   while (1) {
+//   }
+
+//   getch();   // Wait for user input
+//   endwin();  // End ncurses
+//   return 0;
+// }
