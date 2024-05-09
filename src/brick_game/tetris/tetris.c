@@ -29,25 +29,24 @@ int drawFig(figure_t figure, int field[HEIGHT][WIDTH],
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       getRotatedCoordinates(figure, i, j, &ii, &jj);
-      if (field[ii][jj]) {
-        res = 5;  // we smashed into another figure
-        break;
-      }
-      if (ii < 0 || jj < 0 || ii > HEIGHT || jj >= WIDTH) {
-        if (figure.fig[i][j]) {
+      // if (ii < 0 || ii >= HEIGHT) continue;
+      if (ii < 0 || jj < 0 || ii >= HEIGHT || jj >= WIDTH) {  // if OOB
+        if (figure.fig[i][j]) {                               // if figure
           if (ii < 0) {
             res = 1;  // OOB top
-            break;
           } else if (ii > HEIGHT) {
             res = 2;  // OOB bottom
-            break;
           } else if (jj < 0) {
             res = 3;  // OOB left
-            break;
           } else if (jj >= WIDTH) {
             res = 4;  // OOB right
-            break;
           }
+          break;
+        }
+
+        if (figure.fig[i][j] && field[ii][jj]) {
+          res = 5;  // we smashed into another figure
+          break;  // разобраться при повороте где сначала eer 3 потом 5
         }
         continue;
         // надо допилить чтоб при повороте смещалось вбок вместо
@@ -85,24 +84,18 @@ void handleKeyPress(figure_t* currentFigure, int field[HEIGHT][WIDTH]) {
       case KEY_UP:
         currentFigure->rotation += 1;
         while (!stop && (err = drawFig(*currentFigure, field, tempField))) {
-          switch (err) {
-            case 5:
-              stop = 1;
-              currentFigure->rotation -= 1;
-              break;
-            case 1:
-              currentFigure->x += 1;
-              break;
-            case 3:
-              currentFigure->y += 1;
-              break;
-            case 4:
-              currentFigure->y -= 1;
-              break;
-            default:
-              stop = 1;
-              currentFigure->rotation -= 1;
-              break;
+          if (err == 5) {
+            stop = 1;
+            currentFigure->rotation -= 1;
+          } else if (err == 1) {
+            currentFigure->y += 1;
+          } else if (err == 3) {
+            currentFigure->x += 1;
+          } else if (err == 4) {
+            currentFigure->x -= 1;
+          } else {
+            stop = 1;
+            currentFigure->rotation -= 1;
           }
         }
         break;
@@ -142,8 +135,9 @@ int main() {
       0, {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, 0, 3, 0};
   int score = 0, level = 1, gameState = 0, time = 1, collision = 1, speed = 20;
   int nextFigureID = rand() % 7;
-  int ch;
+  int ch, err = 0;
   int field[HEIGHT][WIDTH] = {0};
+  int tempField[HEIGHT][WIDTH] = {0};
   int fieldToPrint[HEIGHT][WIDTH] = {0};
   int figList[7][2][4] = {
       {{4, 4, 4, 4}, {0, 0, 0, 0}},  // I
@@ -158,9 +152,7 @@ int main() {
   init();
 
   while (true) {
-    handleKeyPress(&currentFigure, field);
-
-    if (collision) {
+    if (collision) {  // появление новой фигуры, завернуть в функцию
       for (int i = 0; i < HEIGHT; i++)
         for (int j = 0; j < WIDTH; j++) field[i][j] = fieldToPrint[i][j];
 
@@ -171,13 +163,21 @@ int main() {
       updateCurrentFigure(&currentFigure, figList);
       nextFigureID = rand() % 7;
     }
+
+    handleKeyPress(&currentFigure, field);
+
     drawFig(currentFigure, field, fieldToPrint);
 
     drawField(fieldToPrint, score, level, nextFigureID, figList);
     // printf("\033[H\033[J");
     // printField(fieldToPrint);
-    if (time % speed == 0) currentFigure.y += 1;
-
+    if (time % speed == 0) {
+      currentFigure.y += 1;
+      if (drawFig(currentFigure, field, tempField)) {
+        collision = 1;
+        currentFigure.y -= 1;
+      }
+    }
     time += 1;
 
     napms(WAIT_TIME);
@@ -185,3 +185,10 @@ int main() {
   endwin();
   return 0;
 }
+
+/*
+  Че можно сделать но не обязательно
+  при arrowDown скипается время крч ты понял
+  хендлить поворот корректнеее, но эт заеб
+
+*/
