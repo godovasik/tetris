@@ -207,10 +207,33 @@ int updateFigure(figure_t* currentFigure, int field[HEIGHT][WIDTH],
   return res;
 }
 
+int getMaxScore() {
+  FILE* file = fopen("maxScore.txt", "a+");
+  fseek(file, 0, SEEK_END);  // Seek to the end of the file
+  if (ftell(file) == 0) {    // If the position is 0, the file is empty
+    fprintf(file, "0");      // Write "0" to the file
+  }
+  fseek(file, 0, SEEK_SET);
+  int maxScore;
+  fscanf(file, "%d", &maxScore);
+  fclose(file);
+  return maxScore;
+}
+
+void newRecord(int score, int maxScore) {
+  if (score > maxScore) {
+    FILE* file = fopen("maxScore.txt", "a+");
+
+    fprintf(file, "%d", score);
+    fclose(file);
+  }
+}
+
 int main() {
   srand(time(NULL));
   struct Figure currentFigure;
   int score = 0, level = 1, gameState = 0, time = 1, collision = 1, speed = 15;
+  int maxScore = getMaxScore();
   int nextFigureID = rand() % 7;
   int notFalse = 1, rows[HEIGHT];
   int field[HEIGHT][WIDTH] = {0}, fieldToPrint[HEIGHT][WIDTH] = {0};
@@ -231,7 +254,7 @@ int main() {
   while (notFalse) {
     if (handleKeyPress(&currentFigure, field) == 6) break;
     drawFig(currentFigure, field, fieldToPrint);  // fieldToPrint += figure
-    drawField(fieldToPrint, score, level, nextFigureID, figList);
+    drawField(fieldToPrint, score, maxScore, level, nextFigureID, figList);
 
     if (time % speed == 0) {
       if (updateFigure(&currentFigure, field, fieldToPrint, figList,
@@ -243,7 +266,15 @@ int main() {
 
     napms(WAIT_TIME);
   }
-  gg(score);
+
+  if (score > maxScore) {
+    FILE* file = fopen("maxScore.txt", "w");
+    fprintf(file, "%d", score);
+    fclose(file);
+  }
+
+  newRecord(score, maxScore);
+  gg(score, maxScore);
   endwin();
   return 0;
 }

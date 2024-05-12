@@ -14,16 +14,19 @@ int printStaticText() {
   mvprintw(0, WIDTH + 2, "Next Piece");
   mvprintw(5, WIDTH + 2, "Score     ");
   mvprintw(6, WIDTH + 2, "          ");
-  mvprintw(8, WIDTH + 2, "Level     ");
+  mvprintw(8, WIDTH + 2, "Score     ");
   mvprintw(9, WIDTH + 2, "          ");
+  mvprintw(11, WIDTH + 2, "Level     ");
+  mvprintw(12, WIDTH + 2, "          ");
   mvprintw(HEIGHT + 1, 5, "(c) baileyfl, 2024");
   attroff(COLOR_PAIR(1));
 }
 
-int printDynamicText(int score, int level) {
+int printDynamicText(int score, int maxScore, int level) {
   attron(COLOR_PAIR(1));
   mvprintw(6, WIDTH + 2, "%d", score);
-  mvprintw(9, WIDTH + 2, "%d", level);
+  mvprintw(9, WIDTH + 2, "%d", maxScore);
+  mvprintw(12, WIDTH + 2, "%d", level);
   attroff(COLOR_PAIR(1));
 }
 
@@ -75,17 +78,27 @@ void pause() {
   clear();
 }
 
-void gg(int score) {
+void gg(int score, int maxScore) {
   attron(COLOR_PAIR(1));
   int scoreSize = snprintf(NULL, 0, "%d", score);
+  int maxScoreSize = snprintf(NULL, 0, "%d", maxScore;
   mvprintw(11, 2, "     GAME OVER     ");
   mvprintw(12, 2, " Your final score: ");
   mvprintw(13, 2, "                   ");
   move(13, 2);
   for (int i = 0; i < 10 - (scoreSize + 1) / 2; i++) printw(" ");
-  printw("%d", score);
-  mvprintw(14, 2, "   Press any key   ");
-  mvprintw(15, 2, "      to exit      ");
+  if (score > maxScore) {
+    attron(COLOR_PAIR(2));
+    printw("%d New record!", score);
+    attroff(COLOR_PAIR(2));
+  } else printw("%d", score);
+  mvprintw(14, 2, "     Max score:    ");
+  mvprintw(15, 2, "                   ");
+  move(15, 2);
+  for (int i = 0; i < 10 - (maxScore + 1) / 2; i++) printw(" ");
+  printw("%d", maxScore);
+  mvprintw(16, 2, "   Press any key   ");
+  mvprintw(17, 2, "      to exit      ");
   attroff(COLOR_PAIR(1));
 
   while (true) {
@@ -95,15 +108,15 @@ void gg(int score) {
   clear();
 }
 
-int drawField(int field[HEIGHT][WIDTH], int score, int level, int nextFigureID,
-              int figList[7][2][4]) {
+int drawField(int field[HEIGHT][WIDTH], int score, int maxScore, int level,
+              int nextFigureID, int figList[7][2][4]) {
   for (int i = 0; i <= HEIGHT; i++) {
     for (int j = 0; j <= WIDTH; j++) {
       drawCell(field[i][j], i + 1, j + 1);  // draws current game state
     }
   }
   printStaticText();
-  printDynamicText(score, level);
+  printDynamicText(score, maxScore, level);
   if (nextFigureID != -1)
     for (int i = 0; i < 2; i++)
       for (int j = 0; j < 4; j++)
