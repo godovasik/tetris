@@ -10,7 +10,7 @@
 int boolBorder(int i, int j);
 int boolPreview(int i, int j);
 int printStaticText();
-int printDynamicText(int score, int level);
+int printDynamicText(int score, int maxScore, int level);
 void drawCell(int color, int i, int j);
 int drawField(int field[HEIGHT][WIDTH], int score, int level, int maxScore,
               int nextFigureID, int figList[7][2][4]);

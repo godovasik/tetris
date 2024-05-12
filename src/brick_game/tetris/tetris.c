@@ -222,7 +222,7 @@ int getMaxScore() {
 
 void newRecord(int score, int maxScore) {
   if (score > maxScore) {
-    FILE* file = fopen("maxScore.txt", "a+");
+    FILE* file = fopen("maxScore.txt", "w");
 
     fprintf(file, "%d", score);
     fclose(file);
@@ -265,12 +265,6 @@ int main() {
     time += 1;
 
     napms(WAIT_TIME);
-  }
-
-  if (score > maxScore) {
-    FILE* file = fopen("maxScore.txt", "w");
-    fprintf(file, "%d", score);
-    fclose(file);
   }
 
   newRecord(score, maxScore);
