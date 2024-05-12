@@ -24,7 +24,8 @@ void getRotatedCoordinates(figure_t figure, int i, int j, int* ii, int* jj) {
 int drawFig(figure_t figure, int field[HEIGHT][WIDTH],
             int fieldToPrint[HEIGHT][WIDTH]) {
   int currentCell = 0, ii = 0, jj = 0;
-  int tempField[HEIGHT][WIDTH] = {0};
+  int tempField[HEIGHT][WIDTH];
+  memcpy(tempField, field, sizeof(tempField));  // лол так можно оказывается
   int res = 0;
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
@@ -34,7 +35,7 @@ int drawFig(figure_t figure, int field[HEIGHT][WIDTH],
         if (figure.fig[i][j]) {                               // if figure
           if (ii < 0) {
             res = 1;  // OOB top
-          } else if (ii > HEIGHT) {
+          } else if (ii >= HEIGHT) {
             res = 2;  // OOB bottom
           } else if (jj < 0) {
             res = 3;  // OOB left
@@ -44,25 +45,22 @@ int drawFig(figure_t figure, int field[HEIGHT][WIDTH],
           break;
         }
 
-        if (figure.fig[i][j] && field[ii][jj]) {
-          res = 5;  // we smashed into another figure
-          break;  // разобраться при повороте где сначала eer 3 потом 5
-        }
         continue;
         // надо допилить чтоб при повороте смещалось вбок вместо
         // отказа
       }
+      if (figure.fig[i][j] && field[ii][jj]) {
+        res = 5;  // we smashed into another figure
+        break;  // разобраться при повороте где сначала eer 3 потом 5
+      }
 
-      tempField[ii][jj] = figure.fig[i][j];  // если все ок то рисуем
+      if (figure.fig[i][j])
+        tempField[ii][jj] = figure.fig[i][j];  // если все ок то рисуем
     }
     if (res) break;
   }
-  if (!res)
-    for (int i = 0; i < HEIGHT; i++) {
-      for (int j = 0; j < WIDTH; j++) {
-        fieldToPrint[i][j] = tempField[i][j];
-      }
-    }
+  if (!res) memcpy(fieldToPrint, tempField, sizeof(tempField));
+
   return res;
 }
 
@@ -74,7 +72,7 @@ void updateCurrentFigure(figure_t* currentFigure, int figList[7][2][4]) {
     }
 }
 
-void handleKeyPress(figure_t* currentFigure, int field[HEIGHT][WIDTH]) {
+int handleKeyPress(figure_t* currentFigure, int field[HEIGHT][WIDTH]) {
   int ch, err, stop;
   int tempField[HEIGHT][WIDTH] = {0};
 
@@ -117,9 +115,35 @@ void handleKeyPress(figure_t* currentFigure, int field[HEIGHT][WIDTH]) {
         if (err = drawFig(*currentFigure, field, tempField))
           currentFigure->x -= 1;
         break;
+
+      case ' ':
+        pause();
+        break;
+      case 27:
+        err = 6;
+        break;
     }
     flushinp();
   }
+  return err;
+}
+
+int spawnNewFigure(int field[HEIGHT][WIDTH], int fieldToPrint[HEIGHT][WIDTH],
+                   int figList[7][2][4], struct Figure* currentFigure,
+                   int* nextFigureID) {
+  for (int i = 0; i < HEIGHT; i++)
+    for (int j = 0; j < WIDTH; j++) field[i][j] = fieldToPrint[i][j];
+  currentFigure->rotation = 0;
+  currentFigure->y = -1;
+  currentFigure->x = 3;
+  currentFigure->figID = *nextFigureID;
+
+  int tempField[HEIGHT][WIDTH] = {0};
+  int res = 0;
+  updateCurrentFigure(currentFigure, figList);
+  *nextFigureID = rand() % 7;
+  if (drawFig(*currentFigure, field, tempField)) res = 1;
+  return res;
 }
 
 void printField(int field[HEIGHT][WIDTH]) {
@@ -129,59 +153,97 @@ void printField(int field[HEIGHT][WIDTH]) {
   }
 }
 
+int isRowFull(int field[HEIGHT][WIDTH], int row) {
+  if (row < 0) return 0;
+  int isFull = 1;
+  for (int j = 0; j < WIDTH; j++) {
+    isFull &= (field[row][j] != 0);
+  }
+  return isFull;
+}
+
+int myPow(int base, int exponent) {
+  int result = 1;
+  for (int i = 0; i < exponent; i++) result *= base;
+  return result;
+}
+
+int clearRows(int field[HEIGHT][WIDTH], int rows[HEIGHT], int* score) {
+  int numRowsCleared = 0;
+  for (int i = HEIGHT - 1; i >= 0; i--) {
+    if (rows[i]) {
+      for (int j = i; j > 0; j--) {
+        memcpy(field[j], field[j - 1], sizeof(field[j]));
+      }
+      // memset(field[0], 0, sizeof(field[0]));
+      numRowsCleared++;
+    }
+  }
+  *score += (myPow(2, numRowsCleared) - 1) * 100;
+  return numRowsCleared;
+}
+
+void updateLevelAndSpeed(int* level, int* speed, int* score,
+                         int field[HEIGHT][WIDTH]) {
+  int rows[HEIGHT];
+  for (int i = 0; i < HEIGHT; i++) rows[i] = isRowFull(field, i);
+  if (clearRows(field, rows, score)) {
+    *level = *score / 600 + 1;
+    *speed = 16 - *level <= 10 ? *level : 10;
+  }
+}
+
+int updateFigure(figure_t* currentFigure, int field[HEIGHT][WIDTH],
+                 int fieldToPrint[HEIGHT][WIDTH], int figList[7][2][4],
+                 int* nextFigureID) {
+  int tempField[HEIGHT][WIDTH] = {0};
+  int res = 0;
+  currentFigure->y += 1;
+  if (drawFig(*currentFigure, field, tempField)) {
+    currentFigure->y -= 1;
+    spawnNewFigure(field, fieldToPrint, figList, currentFigure, nextFigureID);
+  }
+  if (drawFig(*currentFigure, field, tempField)) res = 1;
+  return res;
+}
+
 int main() {
   srand(time(NULL));
-  struct Figure currentFigure = {
-      0, {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}, 0, 3, 0};
-  int score = 0, level = 1, gameState = 0, time = 1, collision = 1, speed = 20;
+  struct Figure currentFigure;
+  int score = 0, level = 1, gameState = 0, time = 1, collision = 1, speed = 15;
   int nextFigureID = rand() % 7;
-  int ch, err = 0;
-  int field[HEIGHT][WIDTH] = {0};
-  int tempField[HEIGHT][WIDTH] = {0};
-  int fieldToPrint[HEIGHT][WIDTH] = {0};
+  int notFalse = 1, rows[HEIGHT];
+  int field[HEIGHT][WIDTH] = {0}, fieldToPrint[HEIGHT][WIDTH] = {0};
   int figList[7][2][4] = {
       {{4, 4, 4, 4}, {0, 0, 0, 0}},  // I
       {{0, 2, 0, 0}, {0, 2, 2, 2}},  // J
       {{0, 0, 3, 0}, {3, 3, 3, 0}},  // L
       {{0, 7, 7, 0}, {0, 7, 7, 0}},  // O
-      {{0, 5, 5, 0}, {0, 0, 5, 5}},  // S
+      {{0, 0, 5, 5}, {0, 5, 5, 0}},  // S
       {{0, 0, 6, 0}, {0, 6, 6, 6}},  // T
       {{0, 2, 2, 0}, {0, 0, 2, 2}}   // Z
   };
 
   init();
+  startScreen();
+  spawnNewFigure(field, fieldToPrint, figList, &currentFigure, &nextFigureID);
 
-  while (true) {
-    if (collision) {  // появление новой фигуры, завернуть в функцию
-      for (int i = 0; i < HEIGHT; i++)
-        for (int j = 0; j < WIDTH; j++) field[i][j] = fieldToPrint[i][j];
-
-      collision = currentFigure.rotation = 0;
-      currentFigure.y = -1;
-      currentFigure.figID = nextFigureID;
-
-      updateCurrentFigure(&currentFigure, figList);
-      nextFigureID = rand() % 7;
-    }
-
-    handleKeyPress(&currentFigure, field);
-
-    drawFig(currentFigure, field, fieldToPrint);
-
+  while (notFalse) {
+    if (handleKeyPress(&currentFigure, field) == 6) break;
+    drawFig(currentFigure, field, fieldToPrint);  // fieldToPrint += figure
     drawField(fieldToPrint, score, level, nextFigureID, figList);
-    // printf("\033[H\033[J");
-    // printField(fieldToPrint);
+
     if (time % speed == 0) {
-      currentFigure.y += 1;
-      if (drawFig(currentFigure, field, tempField)) {
-        collision = 1;
-        currentFigure.y -= 1;
-      }
+      if (updateFigure(&currentFigure, field, fieldToPrint, figList,
+                       &nextFigureID))
+        break;
+      updateLevelAndSpeed(&level, &speed, &score, field);
     }
     time += 1;
 
     napms(WAIT_TIME);
   }
+  gg(score);
   endwin();
   return 0;
 }
