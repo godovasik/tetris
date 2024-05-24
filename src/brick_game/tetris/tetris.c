@@ -123,6 +123,7 @@ int handleKeyPress(figure_t* currentFigure, int field[HEIGHT][WIDTH]) {
         err = 6;
         break;
     }
+
     flushinp();
   }
   return err;
