@@ -78,23 +78,23 @@ void pause() {
   clear();
 }
 
-void gg(int score, int maxScore) {
+void gg(GameInfo_t gameInfo) {
   attron(COLOR_PAIR(1));
-  int scoreSize = snprintf(NULL, 0, "%d", score);
+  int scoreSize = snprintf(NULL, 0, "%d", gameInfo.score);
   mvprintw(11, 2, "     GAME OVER     ");
   mvprintw(12, 2, " Your final score: ");
   mvprintw(13, 2, "                   ");
   mvprintw(14, 2, "                   ");
   move(13, 2);
   for (int i = 0; i < 10 - (scoreSize + 1) / 2; i++) printw(" ");
-  printw("%d", score);
-  if (score > maxScore) {
+  printw("%d", gameInfo.score);
+  if (gameInfo.score > gameInfo.high_score) {
     attron(COLOR_PAIR(2));
     mvprintw(14, 6, "New record!");
     attron(COLOR_PAIR(1));
   }
   mvprintw(15, 2, "                   ");
-  mvprintw(15, 2, "  Max score:%d", maxScore);
+  mvprintw(15, 2, "  Max score:%d", gameInfo.high_score);
   mvprintw(16, 2, "                   ");
 
   mvprintw(17, 2, "   Press any key   ");

@@ -184,13 +184,12 @@ int clearRows(int field[HEIGHT][WIDTH], int rows[HEIGHT], int* score) {
   return numRowsCleared;
 }
 
-void updateLevelAndSpeed(int* level, int* speed, int* score,
-                         int field[HEIGHT][WIDTH]) {
+void updateLevelAndSpeed(GameInfo_t* gameInfo) {  // and clear rows
   int rows[HEIGHT];
-  for (int i = 0; i < HEIGHT; i++) rows[i] = isRowFull(field, i);
-  if (clearRows(field, rows, score)) {
-    *level = *score / 600 + 1;
-    *speed = 16 - *level <= 10 ? *level : 10;
+  for (int i = 0; i < HEIGHT; i++) rows[i] = isRowFull(gameInfo->field, i);
+  if (clearRows(gameInfo->field, rows, &(gameInfo->score))) {
+    gameInfo->level = gameInfo->score / 600 + 1;
+    gameInfo->speed = 16 - gameInfo->level <= 10 ? gameInfo->level : 10;
   }
 }
 
@@ -221,20 +220,49 @@ int getMaxScore() {
   return maxScore;
 }
 
-void newRecord(int score, int maxScore) {
-  if (score > maxScore) {
+void newRecord(GameInfo_t gameInfo) {
+  if (gameInfo.score > gameInfo.high_score) {
     FILE* file = fopen("maxScore.txt", "w");
 
-    fprintf(file, "%d", score);
+    fprintf(file, "%d", gameInfo.score);
     fclose(file);
+  }
+}
+
+void initGameInfo(GameInfo_t* gameInfo) {
+  gameInfo->field = (int**)malloc(HEIGHT * sizeof(int*));
+  for (int i = 0; i < HEIGHT; i++) {
+    gameInfo->field[i] = (int*)malloc(WIDTH * sizeof(int));
+  }
+  gameInfo->next = (int**)malloc(4 * sizeof(int*));
+  for (int i = 0; i < 4; i++) {
+    gameInfo->next[i] = (int*)malloc(4 * sizeof(int));
+  }
+  gameInfo->score = 0;
+  gameInfo->high_score = getMaxScore();
+  gameInfo->level = 1;
+  gameInfo->speed = 15;
+  gameInfo->pause = 0;
+}
+
+freeGameInfo(GameInfo_t* gameInfo) {
+  free(gameInfo->field);
+  for (int i = 0; i < HEIGHT; i++) {
+    free(gameInfo->field[i]);
+  }
+  free(gameInfo->next);
+  for (int i = 0; i < 4; i++) {
+    free(gameInfo->next[i]);
   }
 }
 
 int main() {
   srand(time(NULL));
-  struct Figure currentFigure;
-  int score = 0, level = 1, gameState = 0, time = 1, collision = 1, speed = 15;
-  int maxScore = getMaxScore();
+  figure_t currentFigure;
+  GameInfo_t gameInfo;
+
+  initGameInfo(&gameInfo);
+  int tick = 1;
   int nextFigureID = rand() % 7;
   int notFalse = 1, rows[HEIGHT];
   int field[HEIGHT][WIDTH] = {0}, fieldToPrint[HEIGHT][WIDTH] = {0};
@@ -255,20 +283,23 @@ int main() {
   while (notFalse) {
     if (handleKeyPress(&currentFigure, field) == 6) break;
     drawFig(currentFigure, field, fieldToPrint);  // fieldToPrint += figure
-    drawField(fieldToPrint, score, maxScore, level, nextFigureID, figList);
+    drawField(fieldToPrint, gameInfo.score, gameInfo.high_score, gameInfo.level,
+              nextFigureID, figList);
 
-    if (time % speed == 0) {
+    if (tick % gameInfo.speed == 0) {
       if (updateFigure(&currentFigure, field, fieldToPrint, figList,
                        &nextFigureID))
         break;
-      updateLevelAndSpeed(&level, &speed, &score, field);
+      updateLevelAndSpeed(&gameInfo);
     }
-    time += 1;
+    tick += 1;
 
     napms(WAIT_TIME);
   }
 
-  newRecord(score, maxScore);
+  freeGameInfo(&gameInfo);
+
+  newRecord(gameInfo);
   gg(score, maxScore);
   endwin();
   return 0;
